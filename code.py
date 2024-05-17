@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import os
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
+from transformers import pipeline
+from sklearn.model_selection import GridSearchCV
 
 
 # Download NLTK resources
@@ -83,26 +85,80 @@ X_train_vec = vectorizer.fit_transform(X_train)
 X_test_vec = vectorizer.transform(X_test)
 
 
-#Model training
+#Linear Model training
 clf = SVC(kernel='linear')
 clf.fit(X_train_vec, y_train)
 accuracy_train = clf.score(X_train_vec, y_train)
 
-#Model testing
-y_pred = clf.predict(X_test_vec)
-accuracy_test = accuracy_score(y_test, y_pred)
-model_classification_report = classification_report(y_test, y_pred)
-print("Accuracy:", accuracy_test)
+#Linear Model testing
+y_pred_linear = clf.predict(X_test_vec)
+accuracy_test = accuracy_score(y_test, y_pred_linear)
+model_classification_report = classification_report(y_test, y_pred_linear)
+print("Linear SVM Accuracy:", accuracy_test)
 print("Classification Report:\n", model_classification_report)
 
-#Plot the results
-#Still to be done
+
+#SVM with gridsearch training
+parameters = {'kernel': ('linear', 'rbf'), 'C': [1, 10]}
+svc = SVC()
+clf = GridSearchCV(svc, parameters)
+clf.fit(X_train_vec, y_train)
+accuracy_train = clf.score(X_train_vec, y_train)
+#print("Best parameters:", clf.best_params)
+
+#SVM with gridsearch testing
+y_pred_grid = clf.predict(X_test_vec)
+accuracy = accuracy_score(y_test, y_pred_grid)
+print("Grid Search SVM Accuracy:", accuracy)
+print("Classification Report:\n", classification_report(y_test, y_pred_grid))
+
+
+#BERT
+nlp = pipeline('sentiment-analysis')
+# Truncate each review in X_test to a maximum length of 512 tokens
+X_test_truncated = [review[:512] for review in X_test]
+# Process input reviews in batches and predict sentiment labels
+batch_size = 8  # Adjust batch size as needed
+y_pred_bert = []
+for i in range(0, len(X_test_truncated), batch_size):
+    batch_reviews = X_test_truncated[i:i+batch_size]
+    batch_outputs = nlp(batch_reviews)
+    batch_predictions = [output['label'] for output in batch_outputs]
+    y_pred_bert.extend(batch_predictions)
+# Convert sentiment labels to 'positive' or 'negative'
+y_pred_bert = ['positive' if label == 'POSITIVE' else 'negative' for label in y_pred_bert]
+# Evaluate accuracy and print results
+accuracy_bert = accuracy_score(y_test, y_pred_bert)
+print("BERT Accuracy:", accuracy_bert)
+print("Classification Report:\n", classification_report(y_test, y_pred_bert))
+
 
 #Plot confusion matrix
-cm = confusion_matrix(y_test, y_pred)
+#SVM linear
+cm = confusion_matrix(y_test, y_pred_linear)
 plt.figure(figsize=(8, 6))
 sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=['negative', 'positive'], yticklabels=['negative', 'positive'])
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
-plt.title('Confusion Matrix')
+plt.title('SVM linear Confusion Matrix')
+plt.show()
+
+#SVM CV
+cm = confusion_matrix(y_test, y_pred_grid)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=['negative', 'positive'], yticklabels=['negative', 'positive'])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('SVM GridSearch Confusion Matrix')
+plt.show()
+
+#Bert
+cm = confusion_matrix(y_test, y_pred_bert)
+plt.figure(figsize=(8, 6))
+sns.set(font_scale=1.2)  # Adjust font scale if needed
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False,
+            xticklabels=['negative', 'positive'], yticklabels=['negative', 'positive'])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Bert Confusion Matrix')
 plt.show()
