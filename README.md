@@ -1,1 +1,2 @@
-# ReviewSentimentAnalysis
+# Movie Review Sentiment Analysis
+Sentiment analysis, also known as opinion mining, is a process used to determine the sentiment expressed in a piece of text. It can be applied in various domains, including customer feedback analysis, social media monitoring, and market research. This document outlines a sentiment analysis project using three different models: Linear Support Vector Machine (SVM), SVM with GridSearchCV, and a BERT-based model. The primary goal is to compare their performance in classifying reviews as positive or negative.
